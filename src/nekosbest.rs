@@ -13,7 +13,7 @@ impl NekosBest {
     Self {
       url: String::from(url),
       http: reqwest::Client::builder()
-        .user_agent("Mozilla/5.0 (X11; Linux x86_64; rv:159.0) Gecko/20100101 Firefox/159.0")
+        .user_agent("Kitties (https://github.com/hexedrevii/kitties)")
         .build()
         .expect("failed to build HTTP client"),
     }

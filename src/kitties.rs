@@ -1,4 +1,4 @@
-use crate::nekosbest::NekosBest;
+use crate::{models::nekosbest::NekosBestData, nekosbest::NekosBest};
 use eframe::egui;
 use kitties::Client;
 use std::{
@@ -7,7 +7,7 @@ use std::{
 };
 
 enum Message {
-  Url(String),
+  Model(NekosBestData),
   Error(String),
 }
 
@@ -19,7 +19,7 @@ enum ImageType {
 
 pub struct Kitties {
   client: NekosBest,
-  url: Option<String>,
+  model: Option<NekosBestData>,
   error: Option<String>,
   image_type: ImageType,
 
@@ -32,7 +32,7 @@ impl Default for Kitties {
     let (sender, receiver) = channel();
     Self {
       client: NekosBest::new("https://nekos.best/api/v2/"),
-      url: None,
+      model: None,
       error: None,
       image_type: ImageType::Neko,
       sender,
@@ -55,7 +55,7 @@ impl Kitties {
     tokio::spawn(async move {
       let msg = match client.get(&endpoint).await {
         Ok(api) => match api.results.first() {
-          Some(data) => Message::Url(data.url.clone()),
+          Some(data) => Message::Model(data.clone()),
           None => Message::Error("The API returned no results.".into()),
         },
         Err(e) => Message::Error(format!("Could not get kitty: {e}")),
@@ -67,17 +67,17 @@ impl Kitties {
   }
 
   fn save(&mut self, ctx: egui::Context, path: PathBuf) {
-    let uri = self.url.clone();
+    let model = self.model.clone();
     let sender = self.sender.clone();
     let client = self.client.clone();
 
     tokio::spawn(async move {
       let download: Result<(), String> = async {
-        let url = uri.ok_or("No image currently loaded.".to_string())?;
+        let data = model.ok_or("No image currently loaded.".to_string())?;
 
         let response = client
           .http()
-          .get(&url)
+          .get(&data.url)
           .send()
           .await
           .map_err(|err| format!("Could not request image: {err}"))?;
@@ -110,7 +110,7 @@ impl eframe::App for Kitties {
   fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
     while let Ok(msg) = self.receiver.try_recv() {
       match msg {
-        Message::Url(url) => self.url = Some(url),
+        Message::Model(model) => self.model = Some(model),
         Message::Error(e) => self.error = Some(e),
       }
     }
@@ -183,12 +183,34 @@ impl eframe::App for Kitties {
       }
     }
 
+    if let Some(model) = &self.model {
+      egui::Area::new(egui::Id::unique("artist_area"))
+        .anchor(egui::Align2::RIGHT_BOTTOM, egui::vec2(-10.0, -10.0))
+        .show(ui.ctx(), |ui| {
+          egui::Frame::new()
+            .fill(egui::Color32::from_black_alpha(180))
+            .inner_margin(10.0)
+            .show(ui, |ui| {
+              ui.add(
+                egui::Label::new(egui::RichText::new(format!(
+                  "Artist: {}",
+                  &model.artist_name
+                )))
+                .wrap_mode(egui::TextWrapMode::Extend),
+              );
+              ui.horizontal(|ui| {
+                ui.label("Source:");
+                ui.hyperlink_to("Website", &model.source_url)
+              });
+            })
+        });
+    }
     egui::CentralPanel::default().show(ui, |ui| {
       ui.centered_and_justified(|ui| {
-        ui.vertical_centered(|ui| match &self.url {
-          Some(url) => {
+        ui.vertical_centered(|ui| match &self.model {
+          Some(model) => {
             ui.add(
-              egui::Image::new(url.as_str())
+              egui::Image::new(&model.url)
                 .max_width(800.0)
                 .max_height(1000.0),
             );
