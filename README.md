@@ -4,6 +4,13 @@ Simple GUI app to look at cartoon women with feline features.
 # Showcase
 ![Image showing the EGUI app](./showcase.png)
 
+# Shortcuts
+Instead of navigating the menubar, you can use some handy keyboard shortcuts!
+
+Save Image: Ctrl+Shift+S
+
+New Image: Ctrl+N
+
 # Building
 First, you will need git and rust.
 
