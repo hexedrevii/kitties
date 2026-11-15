@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Kitties
+Icon=/usr/local/share/kitties/icon.png
+Exec=/usr/local/share/kitties/kitties
+Categories=Utility
+Comment=Simple way to look at cartoon women!
+Terminal=false
